@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordIS", "DiscordIS\DiscordIS.csproj", "{6E05CFC2-CFFC-4307-8E7C-EC42546C1FA2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "Core\Core.csproj", "{19D13504-CCED-4119-BA41-C7B9851C527E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YoutubeExplode", "YoutubeExplode\YoutubeExplode.csproj", "{490DE158-CC27-4EEC-A3CC-C8C0E6B9E4AB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6E05CFC2-CFFC-4307-8E7C-EC42546C1FA2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E05CFC2-CFFC-4307-8E7C-EC42546C1FA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E05CFC2-CFFC-4307-8E7C-EC42546C1FA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E05CFC2-CFFC-4307-8E7C-EC42546C1FA2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19D13504-CCED-4119-BA41-C7B9851C527E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19D13504-CCED-4119-BA41-C7B9851C527E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19D13504-CCED-4119-BA41-C7B9851C527E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19D13504-CCED-4119-BA41-C7B9851C527E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{490DE158-CC27-4EEC-A3CC-C8C0E6B9E4AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{490DE158-CC27-4EEC-A3CC-C8C0E6B9E4AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{490DE158-CC27-4EEC-A3CC-C8C0E6B9E4AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{490DE158-CC27-4EEC-A3CC-C8C0E6B9E4AB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
