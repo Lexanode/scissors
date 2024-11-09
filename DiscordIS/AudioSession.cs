@@ -25,8 +25,9 @@ public class AudioSession : IAsyncDisposable
         QueueEnd,
         Paused
     }
+
     private const int _leaveInterval = 2;
-    
+
     private State _botState;
 
     private CancellationTokenSource _leaveCts;
@@ -141,7 +142,7 @@ public class AudioSession : IAsyncDisposable
     }
 
     public async Task SkipAsync(int count = 0)
-    {   
+    {
         //todo makew return or throw baecvuse ion stop method we haver return
         if (IsDisposed) throw new ObjectDisposedException("Диспоузед");
 
@@ -156,23 +157,23 @@ public class AudioSession : IAsyncDisposable
                 _videoQueue.TryDequeue(out _);
                 count -= 1;
             }
-                await AlertInChannel($"Skipped {count}");
-                switch (_botState)
-                {
-                    case State.Playing:
-                        if (_cts != null)
-                        {
-                            _logger.LogInformation($"Stop current track in {_voiceChannel.Id}");
-                            await _cts.CancelAsync();
-                            _cts.Dispose();
-                        }
-                        
-                        _logger.LogInformation($"Try change state to playing in {_voiceChannel.Id}");
-                        await TryStartPlaybackAsync();
-                        _logger.LogInformation($"State changed in {_voiceChannel.Id}");
-                        break;
-                }
-            
+
+            await AlertInChannel($"Skipped {count}");
+            switch (_botState)
+            {
+                case State.Playing:
+                    if (_cts != null)
+                    {
+                        _logger.LogInformation($"Stop current track in {_voiceChannel.Id}");
+                        await _cts.CancelAsync();
+                        _cts.Dispose();
+                    }
+
+                    _logger.LogInformation($"Try change state to playing in {_voiceChannel.Id}");
+                    await TryStartPlaybackAsync();
+                    _logger.LogInformation($"State changed in {_voiceChannel.Id}");
+                    break;
+            }
         }
         catch (Exception e)
         {
@@ -212,8 +213,8 @@ public class AudioSession : IAsyncDisposable
     }
 
     public async Task StopAsync()
-    {   
-        if (IsDisposed||_botState is State.Disconnected or State.Stopped) return;
+    {
+        if (IsDisposed || _botState is State.Disconnected or State.Stopped) return;
         await _sem.WaitAsync();
         try
         {
@@ -423,8 +424,10 @@ public class AudioSession : IAsyncDisposable
             CopyMusicStreamToFfmpeg(); // not need AWAIT
             CheckErrorsFfmpegStd();
         }
+
         return false;
     }
+
     /// <summary>
     /// Не запускать без семафора
     /// </summary>
@@ -441,7 +444,8 @@ public class AudioSession : IAsyncDisposable
 
             //TODO: play stop add resume crash
             VideoId videoDataRecord = default;
-            if (!(_pauseCts?.IsCancellationRequested ?? false) && !_videoQueue.TryDequeue(out videoDataRecord)) continue;
+            if (!(_pauseCts?.IsCancellationRequested ?? false) &&
+                !_videoQueue.TryDequeue(out videoDataRecord)) continue;
 
             //todo  is cannot write dispose and make again america great
             if (_outStream is null || !_outStream.CanWrite)
@@ -449,10 +453,10 @@ public class AudioSession : IAsyncDisposable
                 _logger.LogInformation("creating pcm stream");
                 _outStream = _audioClient.CreatePCMStream(AudioApplication.Music, 48000);
             }
-            
+
             var isNeedRestart = await TryStartStreamMusic(videoDataRecord);
             if (isNeedRestart) continue;
-            
+
             DisposeCancelTokenPausedCtsAndMakeNew();
             _ffmpeg.StandardOutput.BaseStream.CopyToAsync(_outStream, _pauseCts.Token);
             await AlertInChannelResumeOrNot(videoDataRecord);
@@ -462,18 +466,22 @@ public class AudioSession : IAsyncDisposable
     }
 
     private async Task SetupLeaveAsync()
-    { 
+    {
         _logger.LogInformation($"Setup leave in {_voiceChannel.Id} ");
         //pizdec refactors
         if (_leaveCts != null)
-        { try
-            { await _leaveCts.CancelAsync(); }
+            try
+            {
+                await _leaveCts.CancelAsync();
+            }
             catch (Exception)
             {
             }
-            finally { _leaveCts?.Dispose(); }
-        }
-    
+            finally
+            {
+                _leaveCts?.Dispose();
+            }
+
         _leaveCts = new CancellationTokenSource();
         Task.Delay(TimeSpan.FromMinutes(_leaveInterval), _leaveCts.Token).ContinueWith((x) =>
         {
