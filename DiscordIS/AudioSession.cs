@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Audio;
+using Discord.Net;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using YoutubeExplode;
@@ -41,7 +42,7 @@ public class AudioSession : IAsyncDisposable
     private readonly IVoiceChannel _voiceChannel;
 
     private readonly YoutubeClient _youtubeClient;
-
+    private VideoId _curentVideoId;
     private AudioOutStream _outStream;
     private Stream _youtubeStream;
 
@@ -286,6 +287,7 @@ public class AudioSession : IAsyncDisposable
         {
             _logger.LogInformation("try get manifest via explode");
             var manifest = await _youtubeClient.Videos.Streams.GetManifestAsync(videoDataRecord);
+            //var manifest = await _youtubeClient.Videos.Streams.;
 
             var streamInfo = manifest.GetAudioStreams()
                 .MinBy(x => x.Bitrate.BitsPerSecond);
@@ -320,14 +322,74 @@ public class AudioSession : IAsyncDisposable
         await _responseChannel.SendMessageAsync(text);
     }
 
+    private async Task AlertInChannel(Embed embed)
+    {
+        await _responseChannel.SendMessageAsync(" ", false, embed);
+    }
+
+    private async Task<Embed> CreateYoutubeEmbed(string text, VideoId videoDataRecord)
+    {
+        var videoUrl = $"https://youtube.com/watch?v={videoDataRecord.Value}";
+        var video = await _youtubeClient.Videos.GetAsync(videoUrl);
+        var builder = new EmbedBuilder()
+        {
+            Color = Color.Green,
+            Description = "This is the description of the embed message"
+        };
+        builder.WithTitle(text);
+        builder.AddField(x =>
+        {
+            x.Name = "\ud83d\udd14Название трека:";
+            x.Value = video.Title;
+            x.IsInline = true;
+        });
+        builder.AddField(x =>
+        {
+            x.Name = "\u200B";
+            x.Value = "\u200B";
+        });
+        builder.AddField(x =>
+        {
+            x.Name = "\ud83d\udc8eДлина";
+            x.Value =
+                $"{video.Duration.Value.Hours.ToString()}:{video.Duration.Value.Minutes.ToString()}:{video.Duration.Value.Seconds.ToString()}";
+            x.IsInline = true;
+        });
+        builder.AddField(x =>
+        {
+            x.Name = "\ud83e\uddd1\ud83c\udffb\u200d\ud83d\udcbbТреков в очереди";
+            x.Value = _videoQueue.Count;
+            x.IsInline = true;
+        });
+
+        builder.WithUrl(video.Url);
+        //think about this
+        var thumbnmail = video.Thumbnails[video.Thumbnails.Count - 2];
+        if (thumbnmail != null) builder.WithImageUrl(thumbnmail.Url);
+
+        builder.WithDescription(video.Description);
+
+        return builder.Build();
+    }
+
     private async Task AlertInChannelResumeOrNot(VideoId videoDataRecord)
     {
         if (_botState == State.Paused)
+
+
+        {
             await AlertInChannel("Resumed");
+            await AlertInChannel(await CreateYoutubeEmbed("\u2705Начинаю  проигрывать!", _curentVideoId));
+        }
+
         else
-            await AlertInChannel($"""
-                                  Playing: https://www.youtube.com/watch?v={videoDataRecord}
-                                  """);
+        {
+//             await AlertInChannel($"""
+//                                 Playing: https://www.youtube.com/watch?v={videoDataRecord}
+//                                 """); 
+
+            await AlertInChannel(await CreateYoutubeEmbed("\u2705Начинаю  1 проигрывать!", _curentVideoId));
+        }
     }
 
     private async Task CopyMusicStreamToFfmpeg()
@@ -446,7 +508,7 @@ public class AudioSession : IAsyncDisposable
             VideoId videoDataRecord = default;
             if (!(_pauseCts?.IsCancellationRequested ?? false) &&
                 !_videoQueue.TryDequeue(out videoDataRecord)) continue;
-
+            if (videoDataRecord != default) _curentVideoId = videoDataRecord;
             //todo  is cannot write dispose and make again america great
             if (_outStream is null || !_outStream.CanWrite)
             {
