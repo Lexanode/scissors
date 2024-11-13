@@ -22,6 +22,7 @@ public class AudioSession : IAsyncDisposable
     {
         Stopped,
         Playing,
+        Buffering,
         Disconnected,
         QueueEnd,
         Paused
@@ -97,7 +98,7 @@ public class AudioSession : IAsyncDisposable
         await _sem.WaitAsync();
         try
         {
-            if (_botState == State.Stopped || _botState == State.Paused || _botState == State.Stopped)
+            if (_botState == State.Stopped || _botState == State.Paused)
             {
                 _logger.LogInformation($"Try change state to playing in {_voiceChannel.Id}");
                 await TryStartPlaybackAsync();
@@ -122,7 +123,7 @@ public class AudioSession : IAsyncDisposable
         {
             _logger.LogInformation($"Enqueue video {videoId} in {_voiceChannel.Id}");
             _videoQueue.Enqueue(videoId);
-            await AlertInChannel("Track enqueued");
+            await AlertInChannel(await CreateYoutubeEmbed("\u2705Трек добавлен в очередь!", videoId));
             if (_leaveCts is { IsCancellationRequested: false }) await _leaveCts.CancelAsync();
 
             if (_botState == State.QueueEnd || _botState == State.Disconnected)
@@ -148,7 +149,7 @@ public class AudioSession : IAsyncDisposable
         if (IsDisposed) throw new ObjectDisposedException("Диспоузед");
 
         if (count < 0) throw new ArgumentException();
-
+        if (_botState == State.Buffering || _botState == State.Disconnected || _botState == State.Stopped) return;
         await _sem.WaitAsync();
         try
         {
@@ -189,6 +190,7 @@ public class AudioSession : IAsyncDisposable
     public async Task PauseAsync()
     {
         if (IsDisposed) return;
+        if (_botState == State.Buffering || _botState == State.Disconnected || _botState == State.Stopped) return;
         await _sem.WaitAsync();
         try
         {
@@ -215,6 +217,7 @@ public class AudioSession : IAsyncDisposable
 
     public async Task StopAsync()
     {
+        if (_botState == State.Buffering || _botState == State.Disconnected || _botState == State.Stopped) return;
         if (IsDisposed || _botState is State.Disconnected or State.Stopped) return;
         await _sem.WaitAsync();
         try
@@ -375,21 +378,9 @@ public class AudioSession : IAsyncDisposable
     private async Task AlertInChannelResumeOrNot(VideoId videoDataRecord)
     {
         if (_botState == State.Paused)
-
-
-        {
-            await AlertInChannel("Resumed");
-            await AlertInChannel(await CreateYoutubeEmbed("\u2705Начинаю  проигрывать!", _curentVideoId));
-        }
-
+            await AlertInChannel("\u2705Продолжаем бал");
         else
-        {
-//             await AlertInChannel($"""
-//                                 Playing: https://www.youtube.com/watch?v={videoDataRecord}
-//                                 """); 
-
-            await AlertInChannel(await CreateYoutubeEmbed("\u2705Начинаю  1 проигрывать!", _curentVideoId));
-        }
+            await AlertInChannel(await CreateYoutubeEmbed("\u2705Начинаю проигрывать!", videoDataRecord));
     }
 
     private async Task CopyMusicStreamToFfmpeg()
@@ -516,11 +507,17 @@ public class AudioSession : IAsyncDisposable
                 _outStream = _audioClient.CreatePCMStream(AudioApplication.Music, 48000);
             }
 
+            Console.WriteLine(_botState);
+            _botState = State.Buffering;
             var isNeedRestart = await TryStartStreamMusic(videoDataRecord);
             if (isNeedRestart) continue;
 
             DisposeCancelTokenPausedCtsAndMakeNew();
             _ffmpeg.StandardOutput.BaseStream.CopyToAsync(_outStream, _pauseCts.Token);
+            // if (_botState == State.Stopped)
+            // {
+            //     await DisposeAsync();
+            // }
             await AlertInChannelResumeOrNot(videoDataRecord);
             _botState = State.Playing;
             return;
